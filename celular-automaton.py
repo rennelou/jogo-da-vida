@@ -1,15 +1,22 @@
 import numpy as np
 
-size = 3
+size = 5
 maskSize = 3
+maskCenterIndex = 1
 
-matStates = np.array([[0, 0, 0],
-                      [1, 1, 0],
-                      [0, 1, 0]])
+
+matStates = np.array([[0, 0, 0, 0, 0],
+                      [1, 1, 0, 0, 0],
+                      [0, 1, 0, 0, 0],
+                      [1, 1, 0, 0, 0],
+                      [1, 1, 0, 0, 0]])
 
 def transition(mat):
     count = np.count_nonzero(mat == 1)
-    return 1 if count >= 3 else 0
+    if (mat[maskCenterIndex][maskCenterIndex] == 1):
+        return 1 if count == 2 or count == 3 else 0
+    else:
+        return 1 if count == 3 else 0
 
 def tick(mat):
     newMatState = np.zeros((size, size))
@@ -20,6 +27,12 @@ def tick(mat):
 
     return newMatState
 
+print("Initial states")
 print(matStates)
-matStates = tick(matStates)
-print(matStates)
+print("")
+
+for i in range(10):
+    matStates = tick(matStates)
+    print(f'Time {i}')
+    print(matStates)
+    print("")
