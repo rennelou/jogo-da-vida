@@ -28,7 +28,7 @@ fn transition(mat: &Array2<u8>, value: u8) -> u8 {
     }
 }
 
-pub fn zero_neighborhood(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
+pub fn zero_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
     let mut neighborhood = Array2::<u8>::zeros((rad, rad));
     let mask = [-1, 0, 1];
     
@@ -77,7 +77,7 @@ mod tests {
     const SIZE: usize = 3;
 
     #[test]
-    fn validate_range_test() {
+    fn zero_boundary_test() {
         let mat = arr2(&[[1, 1, 1],
                          [1, 0, 1],
                          [1, 1, 1]]);
@@ -85,19 +85,43 @@ mod tests {
         let result = arr2(&[[0, 0, 0],
                             [0, 1, 1],
                             [0, 1, 0]]);
-        assert_eq!(result, zero_neighborhood(&mat, SIZE, (0, 0)));
+        assert_eq!(result, zero_boundary(&mat, SIZE, (0, 0)));
         
         let result = arr2(&[[0, 1, 0],
                             [1, 1, 0],
                             [0, 0, 0]]);
-        assert_eq!(result, zero_neighborhood(&mat, SIZE, (2, 2)));
+        assert_eq!(result, zero_boundary(&mat, SIZE, (2, 2)));
 
         let result = arr2(&[[1, 1, 0],
                             [0, 1, 0],
                             [1, 1, 0]]);
-        assert_eq!(result, zero_neighborhood(&mat, SIZE, (1, 2)));
+        assert_eq!(result, zero_boundary(&mat, SIZE, (1, 2)));
 
-        assert_eq!(mat, zero_neighborhood(&mat, SIZE, (1, 1)));
+        assert_eq!(mat, zero_boundary(&mat, SIZE, (1, 1)));
+    }
+
+    #[test]
+    fn circular_boundary_test() {
+        let mat = arr2(&[[1, 1, 1],
+                         [1, 0, 1],
+                         [1, 1, 1]]);
+
+        let result = arr2(&[[1, 1, 1],
+                            [1, 1, 1],
+                            [1, 1, 0]]);
+        assert_eq!(result, circular_boundary(&mat, SIZE, (0, 0)));
+        
+        let result = arr2(&[[0, 1, 1],
+                            [1, 1, 1],
+                            [1, 1, 1]]);
+        assert_eq!(result, circular_boundary(&mat, SIZE, (2, 2)));
+
+        let result = arr2(&[[1, 1, 1],
+                            [0, 1, 1],
+                            [1, 1, 1]]);
+        assert_eq!(result, circular_boundary(&mat, SIZE, (1, 2)));
+
+        assert_eq!(mat, circular_boundary(&mat, SIZE, (1, 1)));
     }
 
     #[test]
@@ -121,6 +145,6 @@ mod tests {
                               [1, 1, 1],
                               [0, 1, 0]]);
 
-        assert_eq!(expected, tick(zero_neighborhood, SIZE, &mat));
+        assert_eq!(expected, tick(zero_boundary, SIZE, &mat));
     }
 }
