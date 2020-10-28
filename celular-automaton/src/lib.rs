@@ -1,13 +1,13 @@
 use ndarray::{Array2};
 
 pub fn tick(get_neighborhood: fn (&Array2<u8>, usize, (usize, usize)) -> Array2<u8>, size: usize, states: &Array2<u8>) -> Array2<u8>{
-    
+    let size_neighborhood = 3;
     let mut new_states = Array2::<u8>::zeros((size, size));
     
     for (i, row) in states.outer_iter().enumerate() {
         for (j, _) in row.iter().enumerate() {
             let value = states[[i, j]];
-            let neighborhood = get_neighborhood(&states, size, (i, j));
+            let neighborhood = get_neighborhood(&states, size_neighborhood, (i, j));
             new_states[[i, j]] = transition(&neighborhood, value);
         }
     }
@@ -15,17 +15,24 @@ pub fn tick(get_neighborhood: fn (&Array2<u8>, usize, (usize, usize)) -> Array2<
     return new_states;
 }
 
+// Uma celula morta com exatamente 3 vizinho nasce
+// Uma celula vica com 2 ou 3 vizinho permanece viva
+// De resto a celula morre ou permanece morta
 fn transition(mat: &Array2<u8>, value: u8) -> u8 {
     let mut counter = mat.iter().filter(|&item| *item == 1).count(); 
     if value == 1 {
         counter -= 1;
     }
 
-    if counter >= 3 {
+    if value == 0 && counter == 3 {
         return 1;
-    } else {
-        return 0;
     }
+
+    if value == 1 && (counter == 2 || counter == 3) {
+        return 1;
+    }
+    
+    return 0;
 }
 
 pub fn zero_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
@@ -131,7 +138,10 @@ mod tests {
                          [1, 1]]);
 
         let expected = 1;
+        assert_eq!(expected, transition(&mat, value));
 
+        let value = 1;
+        let expected = 1;
         assert_eq!(expected, transition(&mat, value));
     }
 
@@ -141,9 +151,9 @@ mod tests {
                          [1, 0, 1],
                          [1, 1, 1]]);
 
-        let expected = arr2(&[[0, 1, 0],
-                              [1, 1, 1],
-                              [0, 1, 0]]);
+        let expected = arr2(&[[1, 0, 1],
+                              [0, 0, 0],
+                              [1, 0, 1]]);
 
         assert_eq!(expected, tick(zero_boundary, SIZE, &mat));
     }
