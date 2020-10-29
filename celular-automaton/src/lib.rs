@@ -67,16 +67,17 @@ fn transition(mat: &Array2<u8>, value: u8) -> u8 {
     return 0;
 }
 
-pub fn zero_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
+pub fn limited_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
     let mut neighborhood = Array2::<u8>::zeros((rad, rad));
     let mask = [-1, 0, 1];
     
     for (i, i_val) in mask.iter().enumerate() {
-        
-        let i_tranformed = (point.0 as i32) + *i_val;
+
+        let i_tranformed = (point.0 as i32) + i_val;
+
         for (j, j_val) in mask.iter().enumerate() {
             
-            let j_tranformed = (point.1 as i32) + *j_val;
+            let j_tranformed = (point.1 as i32) + j_val;
 
             if i_tranformed < 0 || i_tranformed >= rad as i32 || j_tranformed < 0 || j_tranformed >= rad as i32 {
                 neighborhood[[i, j]] = 0;
@@ -95,12 +96,13 @@ pub fn circular_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) ->
 
     let tranform = |p: usize, val: i32| { return (((p as i32) + (rad as i32) + val) % (rad as i32)) as usize; };
 
-    for (i, i_val) in mask.iter().enumerate() {
+    for (i, &i_val) in mask.iter().enumerate() {
         
-        let i_circle = tranform(point.0, *i_val);
-        for (j, j_val) in mask.iter().enumerate() {
+        let i_circle = tranform(point.0, i_val);
+
+        for (j, &j_val) in mask.iter().enumerate() {
             
-            let j_circle = tranform(point.1, *j_val);
+            let j_circle = tranform(point.1, j_val);
             neighborhood[[i, j]] = mat[[i_circle, j_circle]]
         }    
     }
