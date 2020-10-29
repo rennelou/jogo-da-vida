@@ -2,10 +2,10 @@ use ndarray::{arr2};
 use automaton::{Grid, Boundary};
 
 fn main() {
-    let mut states = arr2(&[[1, 1, 1, 0, 0],
-                            [0, 0, 0, 1, 0],
-                            [0, 1, 0, 1, 0],
+    let mut states = arr2(&[[0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0],
+                            [0, 0, 1, 1, 1],
+                            [0, 0, 1, 0, 0],
                             [0, 0, 0, 1, 0]]);
 
     let size = states.dim().0;
