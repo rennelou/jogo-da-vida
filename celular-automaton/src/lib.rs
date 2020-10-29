@@ -1,25 +1,57 @@
 use ndarray::{Array2};
 
-pub fn tick(get_neighborhood: fn (&Array2<u8>, usize, (usize, usize)) -> Array2<u8>, size: usize, states: &Array2<u8>) -> Array2<u8>{
-    let size_neighborhood = 3;
-    let mut new_states = Array2::<u8>::zeros((size, size));
-    
-    for (i, row) in states.outer_iter().enumerate() {
-        for (j, _) in row.iter().enumerate() {
-            let value = states[[i, j]];
-            let neighborhood = get_neighborhood(&states, size_neighborhood, (i, j));
-            new_states[[i, j]] = transition(&neighborhood, value);
+#[derive(Copy, Clone)]
+pub enum Boundary {
+    Limited,
+    Circular
+}
+
+#[derive(Copy, Clone)]
+pub struct Grid {
+    size: usize,
+    boundary: Boundary
+}
+
+impl Grid {
+    pub fn new(size: usize, boundary: Boundary) -> Self {
+        Grid {
+            size: size,
+            boundary: boundary
         }
     }
 
-    return new_states;
+    pub fn tick(self, states: &Array2<u8>) -> Array2<u8> {
+        let size = self.size;
+        let get_neighborhood = get_boundary_method(self.boundary);
+        let mut new_states = Array2::<u8>::zeros((size, size));
+        
+        for (i, row) in states.outer_iter().enumerate() {
+            for (j, _) in row.iter().enumerate() {
+                let value = states[[i, j]];
+                let neighborhood = get_neighborhood(&states, size, (i, j));
+                new_states[[i, j]] = transition(&neighborhood, value);
+            }
+        }
+    
+        return new_states;
+    } 
+}
+
+fn get_boundary_method(boundary: Boundary) -> fn (&Array2<u8>, usize, (usize, usize)) -> Array2<u8>{
+    match boundary {
+        Boundary::Limited => limited_boundary,
+        Boundary::Circular => circular_boundary
+    }
 }
 
 // Uma celula morta com exatamente 3 vizinho nasce
-// Uma celula vica com 2 ou 3 vizinho permanece viva
+// Uma celula viva com 2 ou 3 vizinho permanece viva
 // De resto a celula morre ou permanece morta
 fn transition(mat: &Array2<u8>, value: u8) -> u8 {
+
     let mut counter = mat.iter().filter(|&item| *item == 1).count(); 
+    
+    //retira da contagem caso a celula tenha valor 1 
     if value == 1 {
         counter -= 1;
     }
@@ -84,7 +116,7 @@ mod tests {
     const SIZE: usize = 3;
 
     #[test]
-    fn zero_boundary_test() {
+    fn limited_boundary_test() {
         let mat = arr2(&[[1, 1, 1],
                          [1, 0, 1],
                          [1, 1, 1]]);
@@ -92,19 +124,19 @@ mod tests {
         let result = arr2(&[[0, 0, 0],
                             [0, 1, 1],
                             [0, 1, 0]]);
-        assert_eq!(result, zero_boundary(&mat, SIZE, (0, 0)));
+        assert_eq!(result, limited_boundary(&mat, SIZE, (0, 0)));
         
         let result = arr2(&[[0, 1, 0],
                             [1, 1, 0],
                             [0, 0, 0]]);
-        assert_eq!(result, zero_boundary(&mat, SIZE, (2, 2)));
+        assert_eq!(result, limited_boundary(&mat, SIZE, (2, 2)));
 
         let result = arr2(&[[1, 1, 0],
                             [0, 1, 0],
                             [1, 1, 0]]);
-        assert_eq!(result, zero_boundary(&mat, SIZE, (1, 2)));
+        assert_eq!(result, limited_boundary(&mat, SIZE, (1, 2)));
 
-        assert_eq!(mat, zero_boundary(&mat, SIZE, (1, 1)));
+        assert_eq!(mat, limited_boundary(&mat, SIZE, (1, 1)));
     }
 
     #[test]
@@ -154,7 +186,7 @@ mod tests {
         let expected = arr2(&[[1, 0, 1],
                               [0, 0, 0],
                               [1, 0, 1]]);
-
-        assert_eq!(expected, tick(zero_boundary, SIZE, &mat));
+        let grid = Grid::new(3, Boundary::Limited);
+        assert_eq!(expected, grid.tick(&mat));
     }
 }

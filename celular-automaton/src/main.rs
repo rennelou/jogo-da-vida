@@ -1,15 +1,18 @@
 use ndarray::{arr2};
-
-const SIZE: usize = 3;
+use automaton::{Grid, Boundary};
 
 fn main() {
-    let mut states = arr2(&[[1, 1, 1],
-                            [1, 0, 0],
-                            [0, 1, 0]]);
+    let mut states = arr2(&[[1, 1, 1, 0, 0],
+                            [0, 0, 0, 1, 0],
+                            [0, 1, 0, 1, 0],
+                            [0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0]]);
 
+    let size = states.dim().0;
+    let grid = Grid::new(size, Boundary::Limited);
     println!("t0\n{}", states);
     for tick in 1..6 {
-        states = automaton::tick(automaton::zero_boundary, SIZE, &states);
+        states = grid.tick(&states);
         println!("t{}\n{}", tick, states);
     }
 }
