@@ -9,21 +9,25 @@ pub enum Boundary {
 #[derive(Copy, Clone)]
 pub struct Grid {
     dimensions: (usize, usize),
-    boundary: Boundary
+    boundary_method: fn (&Array2<u8>, (usize, usize), (usize, usize)) -> Array2<u8>
 }
 
 impl Grid {
     pub fn new(mat: &Array2<u8>, boundary: Boundary) -> Self {
         let dim = mat.dim();
+        let method = match boundary {
+            Boundary::Limited => limited_boundary,
+            Boundary::Circular => circular_boundary
+        };
         Grid {
             dimensions: dim,
-            boundary: boundary
+            boundary_method: method
         }
     }
 
     pub fn tick(self, states: &Array2<u8>) -> Array2<u8> {
         let (heigth, length) = self.dimensions;
-        let get_neighborhood = get_boundary_method(self.boundary);
+        let get_neighborhood = self.boundary_method;
         let mut new_states = Array2::<u8>::zeros((heigth, length));
         
         for (i, row) in states.outer_iter().enumerate() {
@@ -36,13 +40,6 @@ impl Grid {
     
         return new_states;
     } 
-}
-
-fn get_boundary_method(boundary: Boundary) -> fn (&Array2<u8>, (usize, usize), (usize, usize)) -> Array2<u8>{
-    match boundary {
-        Boundary::Limited => limited_boundary,
-        Boundary::Circular => circular_boundary
-    }
 }
 
 // Uma celula morta com exatamente 3 vizinho nasce
