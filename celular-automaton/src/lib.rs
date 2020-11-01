@@ -13,7 +13,8 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new(size: usize, boundary: Boundary) -> Self {
+    pub fn new(mat: &Array2<u8>, boundary: Boundary) -> Self {
+        let size = mat.dim().0;
         Grid {
             size: size,
             boundary: boundary
@@ -188,7 +189,7 @@ mod tests {
         let expected = arr2(&[[1, 0, 1],
                               [0, 0, 0],
                               [1, 0, 1]]);
-        let grid = Grid::new(3, Boundary::Limited);
+        let grid = Grid::new(&mat, Boundary::Limited);
         assert_eq!(expected, grid.tick(&mat));
     }
 }
