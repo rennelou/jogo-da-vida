@@ -8,28 +8,28 @@ pub enum Boundary {
 
 #[derive(Copy, Clone)]
 pub struct Grid {
-    size: usize,
+    dimensions: (usize, usize),
     boundary: Boundary
 }
 
 impl Grid {
     pub fn new(mat: &Array2<u8>, boundary: Boundary) -> Self {
-        let size = mat.dim().0;
+        let dim = mat.dim();
         Grid {
-            size: size,
+            dimensions: dim,
             boundary: boundary
         }
     }
 
     pub fn tick(self, states: &Array2<u8>) -> Array2<u8> {
-        let size = self.size;
+        let (heigth, length) = self.dimensions;
         let get_neighborhood = get_boundary_method(self.boundary);
-        let mut new_states = Array2::<u8>::zeros((size, size));
+        let mut new_states = Array2::<u8>::zeros((heigth, length));
         
         for (i, row) in states.outer_iter().enumerate() {
             for (j, _) in row.iter().enumerate() {
                 let value = states[[i, j]];
-                let neighborhood = get_neighborhood(&states, size, (i, j));
+                let neighborhood = get_neighborhood(&states, self.dimensions, (i, j));
                 new_states[[i, j]] = transition(&neighborhood, value);
             }
         }
@@ -38,7 +38,7 @@ impl Grid {
     } 
 }
 
-fn get_boundary_method(boundary: Boundary) -> fn (&Array2<u8>, usize, (usize, usize)) -> Array2<u8>{
+fn get_boundary_method(boundary: Boundary) -> fn (&Array2<u8>, (usize, usize), (usize, usize)) -> Array2<u8>{
     match boundary {
         Boundary::Limited => limited_boundary,
         Boundary::Circular => circular_boundary
@@ -68,8 +68,9 @@ fn transition(mat: &Array2<u8>, value: u8) -> u8 {
     return 0;
 }
 
-pub fn limited_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
-    let mut neighborhood = Array2::<u8>::zeros((rad, rad));
+pub fn limited_boundary(mat: &Array2<u8>, dim: (usize, usize), point: (usize, usize)) -> Array2<u8> {
+    let (heigth, length) = dim;
+    let mut neighborhood = Array2::<u8>::zeros((heigth, length));
     let mask = [-1, 0, 1];
     
     for (i, i_val) in mask.iter().enumerate() {
@@ -80,7 +81,7 @@ pub fn limited_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> 
             
             let j_tranformed = (point.1 as i32) + j_val;
 
-            if i_tranformed < 0 || i_tranformed >= rad as i32 || j_tranformed < 0 || j_tranformed >= rad as i32 {
+            if i_tranformed < 0 || i_tranformed >= heigth as i32 || j_tranformed < 0 || j_tranformed >= length as i32 {
                 neighborhood[[i, j]] = 0;
             } else {
                 neighborhood[[i, j]] = mat[[i_tranformed as usize, j_tranformed as usize]];
@@ -91,11 +92,12 @@ pub fn limited_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> 
     return neighborhood.to_owned();
 } 
 
-pub fn circular_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) -> Array2<u8> {
-    let mut neighborhood = Array2::<u8>::zeros((rad, rad));
+pub fn circular_boundary(mat: &Array2<u8>, dim: (usize, usize), point: (usize, usize)) -> Array2<u8> {
+    let (heigth, length) = dim;
+    let mut neighborhood = Array2::<u8>::zeros((heigth, length));
     let mask = [-1, 0, 1];
 
-    let tranform = |p: usize, val: i32| { return (((p as i32) + (rad as i32) + val) % (rad as i32)) as usize; };
+    let tranform = |p: usize, val: i32| { return (((p as i32) + (heigth as i32) + val) % (length as i32)) as usize; };
 
     for (i, &i_val) in mask.iter().enumerate() {
         
@@ -116,30 +118,31 @@ pub fn circular_boundary(mat: &Array2<u8>, rad: usize, point: (usize, usize)) ->
 mod tests {
     use super::*;
     use ndarray::arr2;
-    const SIZE: usize = 3;
 
     #[test]
     fn limited_boundary_test() {
         let mat = arr2(&[[1, 1, 1],
                          [1, 0, 1],
                          [1, 1, 1]]);
+        let size = mat.dim();
 
         let result = arr2(&[[0, 0, 0],
                             [0, 1, 1],
                             [0, 1, 0]]);
-        assert_eq!(result, limited_boundary(&mat, SIZE, (0, 0)));
+        assert_eq!(result, limited_boundary(&mat, size, (0, 0)));
         
         let result = arr2(&[[0, 1, 0],
                             [1, 1, 0],
                             [0, 0, 0]]);
-        assert_eq!(result, limited_boundary(&mat, SIZE, (2, 2)));
+        assert_eq!(result, limited_boundary(&mat, size, (2, 2)));
 
         let result = arr2(&[[1, 1, 0],
                             [0, 1, 0],
                             [1, 1, 0]]);
-        assert_eq!(result, limited_boundary(&mat, SIZE, (1, 2)));
+        let size = mat.dim();
+        assert_eq!(result, limited_boundary(&mat, size, (1, 2)));
 
-        assert_eq!(mat, limited_boundary(&mat, SIZE, (1, 1)));
+        assert_eq!(mat, limited_boundary(&mat, size, (1, 1)));
     }
 
     #[test]
@@ -147,23 +150,25 @@ mod tests {
         let mat = arr2(&[[1, 1, 1],
                          [1, 0, 1],
                          [1, 1, 1]]);
-
+        let size = mat.dim(); 
+        
         let result = arr2(&[[1, 1, 1],
                             [1, 1, 1],
                             [1, 1, 0]]);
-        assert_eq!(result, circular_boundary(&mat, SIZE, (0, 0)));
+                                               
+        assert_eq!(result, circular_boundary(&mat, size, (0, 0)));
         
         let result = arr2(&[[0, 1, 1],
                             [1, 1, 1],
                             [1, 1, 1]]);
-        assert_eq!(result, circular_boundary(&mat, SIZE, (2, 2)));
+        assert_eq!(result, circular_boundary(&mat, size, (2, 2)));
 
         let result = arr2(&[[1, 1, 1],
                             [0, 1, 1],
                             [1, 1, 1]]);
-        assert_eq!(result, circular_boundary(&mat, SIZE, (1, 2)));
+        assert_eq!(result, circular_boundary(&mat, size, (1, 2)));
 
-        assert_eq!(mat, circular_boundary(&mat, SIZE, (1, 1)));
+        assert_eq!(mat, circular_boundary(&mat, size, (1, 1)));
     }
 
     #[test]
