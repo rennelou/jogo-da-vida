@@ -12,17 +12,27 @@ pub struct Grid {
     boundary_method: fn (&Array2<u8>, (usize, usize), (usize, usize)) -> Array2<u8>
 }
 
+//desativa warning do _ do match boundary
+#[allow(unreachable_patterns)]
 impl Grid {
-    pub fn new(mat: &Array2<u8>, boundary: Boundary) -> Self {
+    pub fn new(mat: &Array2<u8>, boundary: Boundary) -> Result<Grid, &'static str> {
         let dim = mat.dim();
+        if dim.0 < 3 || dim.1 < 3 {
+            return Err("Calculo inválido para matrizes com linha e/ou coluna menor que 3 elementos.");
+        }
+
         let method = match boundary {
             Boundary::Limited => limited_boundary,
-            Boundary::Circular => circular_boundary
+            Boundary::Circular => circular_boundary,
+            _ => return Err("Método para cálculo de vizinhança não definido."),
         };
-        Grid {
-            dimensions: dim,
-            boundary_method: method
-        }
+
+        Ok(
+            Grid {
+                dimensions: dim,
+                boundary_method: method
+            }
+        )
     }
 
     pub fn tick(self, states: &Array2<u8>) -> Array2<u8> {
@@ -191,7 +201,7 @@ mod tests {
         let expected = arr2(&[[1, 0, 1],
                               [0, 0, 0],
                               [1, 0, 1]]);
-        let grid = Grid::new(&mat, Boundary::Limited);
+        let grid = Grid::new(&mat, Boundary::Limited).unwrap();
         assert_eq!(expected, grid.tick(&mat));
     }
 }
