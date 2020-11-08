@@ -76,49 +76,39 @@ fn transition(mat: &Array2<u8>, value: u8) -> u8 {
 }
 
 pub fn limited_boundary(mat: &Array2<u8>, dim: (usize, usize), point: (usize, usize)) -> Array2<u8> {
+    let transform = |p: usize, val: i32, _: (usize, usize)| {return (p as i32) + val; }; 
+    return boundary(mat, dim, transform, point);
+} 
+
+pub fn circular_boundary(mat: &Array2<u8>, dim: (usize, usize), point: (usize, usize)) -> Array2<u8> {
+    let tranform = |p: usize, val: i32, dim: (usize, usize)| { return ((p as i32) + (dim.0 as i32) + val) % (dim.1 as i32); };
+    return boundary(mat, dim, tranform, point)
+}
+
+fn boundary(mat: &Array2<u8>, dim: (usize, usize), transform: fn(usize, i32, (usize, usize))->i32, point: (usize, usize)) -> Array2<u8> {
     let (heigth, length) = dim;
     let mut neighborhood = Array2::<u8>::zeros((heigth, length));
     let mask = [-1, 0, 1];
-    
-    for (i, i_val) in mask.iter().enumerate() {
 
-        let i_tranformed = (point.0 as i32) + i_val;
+    for (i, &i_val) in mask.iter().enumerate() {
+        
+        let i_transformed = transform(point.0, i_val, dim);
 
-        for (j, j_val) in mask.iter().enumerate() {
+        for (j, &j_val) in mask.iter().enumerate() {
             
-            let j_tranformed = (point.1 as i32) + j_val;
-
-            if i_tranformed < 0 || i_tranformed >= heigth as i32 || j_tranformed < 0 || j_tranformed >= length as i32 {
+            let j_transformed = transform(point.1, j_val, dim);
+            
+            if i_transformed < 0 || i_transformed >= heigth as i32 || j_transformed < 0 || j_transformed >= length as i32 {
                 neighborhood[[i, j]] = 0;
             } else {
-                neighborhood[[i, j]] = mat[[i_tranformed as usize, j_tranformed as usize]];
+                neighborhood[[i, j]] = mat[[i_transformed as usize, j_transformed as usize]];
             }
         }    
     }
     
     return neighborhood.to_owned();
-} 
-
-pub fn circular_boundary(mat: &Array2<u8>, dim: (usize, usize), point: (usize, usize)) -> Array2<u8> {
-    let (heigth, length) = dim;
-    let mut neighborhood = Array2::<u8>::zeros((heigth, length));
-    let mask = [-1, 0, 1];
-
-    let tranform = |p: usize, val: i32| { return (((p as i32) + (heigth as i32) + val) % (length as i32)) as usize; };
-
-    for (i, &i_val) in mask.iter().enumerate() {
-        
-        let i_circle = tranform(point.0, i_val);
-
-        for (j, &j_val) in mask.iter().enumerate() {
-            
-            let j_circle = tranform(point.1, j_val);
-            neighborhood[[i, j]] = mat[[i_circle, j_circle]]
-        }    
-    }
-    
-    return neighborhood.to_owned();
 }
+
 
 //TESTS
 #[cfg(test)]
